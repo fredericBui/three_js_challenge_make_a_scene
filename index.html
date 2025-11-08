@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Make a scene ThreeJS challenge</title>
+		<style>
+			body {
+				margin: 0;
+				overflow: hidden;
+				background: #111;
+			}
+		</style>
+	</head>
+	<body>
+		<script type="importmap">
+			{
+                "imports": {
+                    "three": "https://cdn.jsdelivr.net/npm/three@0.181.0/build/three.module.js",
+                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/"
+                }
+            }
+		</script>
+        <!-- Info Display -->
+        <div style="color: white; position: absolute; left:1%; top: 10px; z-index: 1;">
+            <p id="controlsInfo">Left click with the mouse to turn the camera and right click to pan</p>
+            <p id="cameraPos"></p>
+            <p id="alchemyTableInfo"></p>
+            <p id="tavernChairInfo"></p>
+        </div>
+
+		<script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+        import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+        // 1️⃣ Scene - The scene holds all the objects, lights, and cameras.
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
+
+        // 2️⃣ Camera - The camera defines what we see when we look at the scene.
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(2, 8, 11);
+
+        // 3️⃣ Renderer - The renderer displays the scene from the perspective of the camera.
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // 4️⃣ Walls - Create walls around the scene
+        // left wall
+        const wall = new THREE.BoxGeometry(1, 5, 10);
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: 'rgb(255, 207, 145)' });
+        const wallMesh = new THREE.Mesh(wall, wallMaterial);
+        wallMesh.castShadow = true;
+        wallMesh.position.x = -9.5;
+        wallMesh.position.y = 2.5;
+        scene.add(wallMesh);
+
+        // right wall
+        const wall2Geometry = new THREE.BoxGeometry(1, 5, 10);
+        const wall2Material = new THREE.MeshStandardMaterial({ color: 'rgb(255, 207, 145)' });
+        const wall2 = new THREE.Mesh(wall2Geometry, wall2Material);
+        wall2.castShadow = true;
+        wall2.position.x = 9.5;
+        wall2.position.y = 2.5;
+        scene.add(wall2);
+
+        // back wall
+        const backWallGeometry = new THREE.BoxGeometry(18, 5, 1);
+        const backWallMaterial = new THREE.MeshStandardMaterial({ color: 'rgb(202, 167, 121)'  });
+        const backWall = new THREE.Mesh(backWallGeometry, backWallMaterial);
+        backWall.castShadow = true;
+        backWall.position.z = -4.5;
+        backWall.position.y = 2.5;
+        scene.add(backWall);
+
+        // import OBJ model
+        /*
+        const loader = new OBJLoader();
+        let myObj;
+        loader.load('./tinker.obj', function (obj) {
+            obj.traverse(function (node) {
+                if (node.isMesh) {
+                    node.castShadow = true;
+                }
+            });
+            obj.position.set(0, 0, 0);
+            // turn the model to face the camera
+            obj.rotation.x = 4.8;
+            obj.scale.set(0.5, 0.5, 0.5);
+            scene.add(obj);
+            myObj = obj;
+        });*/
+
+        // import STL model
+        const stlLoader = new STLLoader();
+
+        // Alchemy Table
+        let alchemyTable;
+        stlLoader.load('./3D_models/AlchemyTable.stl', function (geometry) {
+            const material = new THREE.MeshStandardMaterial({ color: 'rgb(155, 201, 182)'  });
+            alchemyTable = new THREE.Mesh(geometry, material);
+            alchemyTable.castShadow = true;
+            alchemyTable.position.set(-6, 0, -2);
+            alchemyTable.rotation.x = -Math.PI / 2;
+            scene.add(alchemyTable);
+        });
+
+        // Tavern Chair
+        let tavernChair;
+        stlLoader.load('./3D_models/tavern_chair.stl', function (geometry) {
+            const material = new THREE.MeshStandardMaterial({ color: 'rgb(214, 95, 80)'  });
+            tavernChair = new THREE.Mesh(geometry, material);
+            tavernChair.castShadow = true;
+            tavernChair.position.set(7, 1.3, -2);
+            tavernChair.scale.set(0.0015, 0.0015, 0.0015);
+            tavernChair.rotation.x = -Math.PI / 2;
+            tavernChair.rotation.z = 5;
+            scene.add(tavernChair);
+        });
+
+        // 6️⃣ Floor - Create a floor for the scene
+        const planeGeometry = new THREE.PlaneGeometry(20, 10);
+        // Load texture for the floor
+        const metalTexture = new THREE.TextureLoader().load('./textures/70332393-brown-oak-parquet-texture-seamless.jpg');
+        const planeMaterial = new THREE.MeshStandardMaterial({ map: metalTexture, roughness: 0.8 });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+
+        // 7️⃣ Lights - Add lighting to the scene
+        const light = new THREE.DirectionalLight(0xffffff, 1.3);
+        light.position.set(3, 5, 3);
+        light.castShadow = true;
+        scene.add(light);
+        // scene.add(new THREE.DirectionalLightHelper(light, 0.5));
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // 8️⃣ Helpers - Add helpers to visualize the scene
+        // const gridHelper = new THREE.GridHelper(20, 20);
+        // scene.add(gridHelper);
+        // const axesHelper = new THREE.AxesHelper(5);
+        // scene.add(axesHelper);
+        
+        // 9️⃣ Controls - Add orbit controls to navigate the scene
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.enablePan = true;
+
+        // 🔟 Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+            // Update camera position display
+            document.getElementById('cameraPos').innerText = `Camera Position: x=${camera.position.x.toFixed(2)}, y=${camera.position.y.toFixed(2)}, z=${camera.position.z.toFixed(2)}`;
+            document.getElementById('alchemyTableInfo').innerText = `Alchemy Table position: x=${alchemyTable.position.x.toFixed(2)}, y=${alchemyTable.position.y.toFixed(2)}, z=${alchemyTable.position.z.toFixed(2)}`;
+            document.getElementById('tavernChairInfo').innerText = `Tavern Chair position: x=${tavernChair.position.x.toFixed(2)}, y=${tavernChair.position.y.toFixed(2)}, z=${tavernChair.position.z.toFixed(2)}`;
+        }
+        animate();
+
+        // 🔁 Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+	</body>
+</html>
